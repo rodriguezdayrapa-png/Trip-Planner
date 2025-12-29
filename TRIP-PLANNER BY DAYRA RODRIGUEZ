@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Trip Planner</title>
+  <style>
+    body { font-family: Arial; background:#f5f5f5; margin:0; padding:20px; }
+    .app { max-width: 800px; margin:auto; background:#fff; padding:20px; border-radius:10px; }
+    h1 { margin-top:0; }
+    input, textarea { width:100%; padding:8px; margin:6px 0 12px; }
+    button { padding:10px 16px; border:0; border-radius:6px; cursor:pointer; }
+    .primary { background:#2d7df4; color:#fff; }
+    .trip-card { border:1px solid #ddd; border-radius:8px; padding:12px; margin-top:10px; }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <h1>Trip Planner</h1>
+
+    <h3>Create a Trip</h3>
+    <input id="tripName" placeholder="Trip name (e.g., Cancun Getaway)" />
+    <input id="destination" placeholder="Destination" />
+    <input id="dates" placeholder="Dates (e.g., Jan 10–15)" />
+    <textarea id="activities" placeholder="Planned activities (one per line)"></textarea>
+    <button class="primary" onclick="saveTrip()">Save Trip</button>
+
+    <h3>Your Trips</h3>
+    <div id="trips"></div>
+  </div>
+
+<script>
+  function getTrips() {
+    return JSON.parse(localStorage.getItem("trips") || "[]");
+  }
+
+  function saveTrip() {
+    const trip = {
+      name: tripName.value,
+      destination: destination.value,
+      dates: dates.value,
+      activities: activities.value.split("\n")
+    };
+
+    const trips = getTrips();
+    trips.push(trip);
+    localStorage.setItem("trips", JSON.stringify(trips));
+    renderTrips();
+    
+    tripName.value = destination.value = dates.value = activities.value = "";
+  }
+
+  function renderTrips() {
+    const trips = getTrips();
+    tripsDiv.innerHTML = "";
+    trips.forEach((t, i) => {
+      const el = document.createElement("div");
+      el.className = "trip-card";
+      el.innerHTML = `
+        <strong>${t.name}</strong><br>
+        ✈️ ${t.destination} — ${t.dates}<br><br>
+        <strong>Activities:</strong><br>
+        <ul>${t.activities.map(a => `<li>${a}</li>`).join("")}</ul>
+        <button onclick="deleteTrip(${i})">Delete</button>
+      `;
+      tripsDiv.appendChild(el);
+    });
+  }
+
+  function deleteTrip(i) {
+    const trips = getTrips();
+    trips.splice(i,1);
+    localStorage.setItem("trips", JSON.stringify(trips));
+    renderTrips();
+  }
+
+  renderTrips();
+</script>
+</body>
+</html>

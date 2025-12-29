@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trip Planner — Full Features MVP</title>
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; background:#f4f6fb; margin:0; }
+    header { background:#2563eb; color:#fff; padding:18px 20px; }
+    .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
+    h1 { margin:0; }
+    section { background:#fff; border-radius:14px; padding:18px; margin-bottom:16px; box-shadow:0 6px 20px rgba(0,0,0,.06);}    
+    input, textarea, select { width:100%; padding:10px; margin:6px 0 10px; border-radius:8px; border:1px solid #d1d5db; }
+    button { padding:10px 14px; border-radius:10px; border:0; cursor:pointer; }
+    .primary { background:#2563eb; color:#fff; }
+    .secondary { background:#e5e7eb; }
+    .trip-card { border:1px solid #e5e7eb; border-radius:12px; padding:14px; margin-top:10px; }
+    .flex { display:flex; gap:12px; }
+    .grid { display:grid; gap:12px; }
+    .two { grid-template-columns:1fr 1fr; }
+    .three { grid-template-columns:1fr 1fr 1fr; }
+    ul { margin:6px 0 0 18px; }
+    .badge { background:#eef2ff; color:#4338ca; padding:4px 8px; border-radius:8px; }
+    .timeline-item { border-left:3px solid #2563eb; padding-left:10px; margin:8px 0; }
+    .map-frame { width:100%; height:260px; border:0; border-radius:12px; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>🌍 Trip Planner — Full Features</h1>
+</header>
+<div class="container">
+
+  <!-- Create Trip -->
+  <section>
+    <h2>Create a Trip</h2>
+    <div class="grid two">
+      <div>
+        <label>Trip Name</label>
+        <input id="tripName" placeholder="Italy Adventure" />
+      </div>
+      <div>
+        <label>Destination</label>
+        <input id="destination" placeholder="Rome, Italy" />
+      </div>
+    </div>
+    <div class="grid two">
+      <div>
+        <label>Start Date</label>
+        <input id="startDate" type="date" />
+      </div>
+      <div>
+        <label>End Date</label>
+        <input id="endDate" type="date" />
+      </div>
+    </div>
+
+    <h3>Day‑by‑Day Itinerary</h3>
+    <textarea id="itinerary" placeholder="Day 1: Colosseum\nDay 2: Vatican Museums\nDay 3: Florence Day Trip"></textarea>
+
+    <h3>Budget & Expenses</h3>
+    <div class="grid three">
+      <div>
+        <label>Total Budget</label>
+        <input id="budgetTotal" type="number" placeholder="1000" />
+      </div>
+      <div>
+        <label>Estimated Flights</label>
+        <input id="budgetFlights" type="number" placeholder="350" />
+      </div>
+      <div>
+        <label>Estimated Hotels</label>
+        <input id="budgetHotels" type="number" placeholder="400" />
+      </div>
+    </div>
+
+    <h3>Hotel & Flight Notes</h3>
+    <textarea id="notes" placeholder="Hotel: Hotel Roma — Confirmation #12345\nFlight: AA 121 — 10:30 AM"></textarea>
+
+    <h3>Map Location (optional)</h3>
+    <input id="mapQuery" placeholder="City or place (ex: Rome Colosseum)" />
+
+    <button class="primary" onclick="saveTrip()">Save Trip</button>
+  </section>
+
+  <!-- Saved Trips -->
+  <section>
+    <h2>Your Trips</h2>
+    <div id="trips"></div>
+  </section>
+</div>
+
+<script>
+  function getTrips() { return JSON.parse(localStorage.getItem('trips') || '[]'); }
+  function setTrips(list) { localStorage.setItem('trips', JSON.stringify(list)); }
+
+  function saveTrip() {
+    const trip = {
+      name: tripName.value,
+      destination: destination.value,
+      start: startDate.value,
+      end: endDate.value,
+      itinerary: itinerary.value.split('\n'),
+      budget: {
+        total: Number(budgetTotal.value||0),
+        flights: Number(budgetFlights.value||0),
+        hotels: Number(budgetHotels.value||0)
+      },
+      notes: notes.value,
+      mapQuery: mapQuery.value
+    };
+
+    const trips = getTrips();
+    trips.push(trip);
+    setTrips(trips);
+    clearForm();
+    renderTrips();
+  }
+
+  function clearForm() {
+    [tripName, destination, startDate, endDate, itinerary, budgetTotal, budgetFlights, budgetHotels, notes, mapQuery]
+      .forEach(el => el.value = '');
+  }
+
+  function deleteTrip(i) {
+    const trips = getTrips();
+    trips.splice(i,1);
+    setTrips(trips);
+    renderTrips();
+  }
+
+  function shareTrip(i) {
+    const trip = getTrips()[i];
+    navigator.clipboard.writeText(JSON.stringify(trip, null, 2));
+    alert('Trip copied to clipboard — you can share this JSON with others.');
+  }
+
+  function renderTrips() {
+    const trips = getTrips();
+    const div = document.getElementById('trips');
+    div.innerHTML = '';
+    if (!trips.length) { div.innerHTML = '<p>No trips yet — create one above.</p>'; return; }
+
+    trips.forEach((t,i)=>{
+      const card = document.createElement('div');
+      card.className = 'trip-card';
+      const budgetUsed = t.budget.flights + t.budget.hotels;
+      const remaining = (t.budget.total||0) - budgetUsed;
+      const mapUrl = t.mapQuery ? `https://www.google.com/maps?q=${encodeURIComponent(t.mapQuery)}&output=embed` : '';
+
+      card.innerHTML = `
+        <strong>${t.name}</strong> <span class="badge">${t.destination}</span><br>
+        📅 ${t.start || '?'} → ${t.end || '?'}
+        <br><br>
+        <strong>Itinerary</strong>
+        <div>${t.itinerary.map(day=>`<div class='timeline-item'>${day}</div>`).join('')}</div>
+        <br>
+        <strong>Budget</strong><br>
+        Total: $${t.budget.total||0} • Flights: $${t.budget.flights||0} • Hotels: $${t.budget.hotels||0}<br>
+        <em>Remaining (approx): $${remaining}</em>
+        <br><br>
+        <strong>Notes</strong><br>
+        <pre style='white-space:pre-wrap;'>${t.notes||''}</pre>
+        ${mapUrl ? `<br><strong>Map</strong><br><iframe class='map-frame' src='${mapUrl}' loading='lazy'></iframe>` : ''}
+        <br>
+        <button class="secondary" onclick="shareTrip(${i})">Share</button>
+        <button class="secondary" onclick="deleteTrip(${i})">Delete</button>
+      `;
+      div.appendChild(card);
+    });
+  }
+
+  renderTrips();
+</script>
+</body>
+</html>
